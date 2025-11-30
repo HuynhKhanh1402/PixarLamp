@@ -1,60 +1,55 @@
 /*
  * Pixar Luxo Lamp Animation
  * 
- * Features:
- * - Articulated lamp with multiple joints (base, lower arm, upper arm, lampshade)
- * - Interactive joint rotation using arrow keys
- * - Spotlight simulation with directional lighting
- * - Material properties for realistic rendering
+ * This program simulates a Pixar-style articulated desk lamp with:
+ * - Multiple rotatable joints (base, lower arm, upper arm, lampshade)
+ * - Realistic spotlight that follows the lampshade direction
+ * - Material properties for metallic appearance
+ * - Interactive controls for manipulating each joint
  * 
  * Controls:
- * - Number keys (1-4): Select joint to rotate
- *   1: Base rotation
- *   2: Lower arm joint
- *   3: Upper arm joint
- *   4: Lampshade joint
+ * - 1-4: Select joint (Base, Lower Arm, Upper Arm, Lampshade)
  * - Arrow keys: Rotate selected joint
- *   Left/Right: Rotate around Y-axis
- *   Up/Down: Rotate around X-axis
- * - F key: Toggle spotlight on/off
- * - R key: Reset all joints to default position
- * - ESC: Exit program
+ * - F: Toggle spotlight on/off
+ * - R: Reset to default position
+ * - ESC: Exit
  */
 
 #include <GL/glut.h>
 #include <cmath>
 #include <iostream>
 
-// Window dimensions
 const int WINDOW_WIDTH = 1024;
 const int WINDOW_HEIGHT = 768;
 
-// Joint selection
+// Enum for selecting which joint to rotate
 enum JointSelection {
-    BASE = 0,
-    LOWER_ARM = 1,
-    UPPER_ARM = 2,
-    LAMPSHADE = 3
+    BASE = 0,        // Base rotation (Y-axis)
+    LOWER_ARM = 1,   // Lower arm joint (X-axis)
+    UPPER_ARM = 2,   // Upper arm joint (X-axis)
+    LAMPSHADE = 3    // Lampshade joint (X and Y-axis)
 };
 
-// Lamp joint angles (in degrees)
+// Structure to hold all lamp joint angles (in degrees)
 struct LampJoints {
-    float baseRotation;      // Rotation around Y-axis
-    float lowerArmAngle;     // Angle at base joint
-    float upperArmAngle;     // Angle at middle joint
-    float lampshadeAngle;    // Angle at lampshade joint
-    float lampshadeRotation; // Rotation of lampshade around its axis
+    float baseRotation;      // Rotation of entire lamp around Y-axis
+    float lowerArmAngle;     // Angle of lower arm from base
+    float upperArmAngle;     // Angle of upper arm from lower arm
+    float lampshadeAngle;    // Tilt angle of lampshade
+    float lampshadeRotation; // Rotation of lampshade around its own axis
 };
 
-// Global variables
+// Initial lamp configuration
 LampJoints lampJoints = {0.0f, 45.0f, -60.0f, -30.0f, 0.0f};
 JointSelection selectedJoint = BASE;
 bool spotlightEnabled = true;
+
+// Camera settings
 float cameraAngleX = 20.0f;
 float cameraAngleY = 30.0f;
 float cameraDistance = 15.0f;
 
-// Lamp dimensions
+// Lamp physical dimensions
 const float BASE_RADIUS = 1.0f;
 const float BASE_HEIGHT = 0.3f;
 const float ARM_RADIUS = 0.15f;
@@ -63,7 +58,6 @@ const float UPPER_ARM_LENGTH = 2.5f;
 const float LAMPSHADE_RADIUS = 0.8f;
 const float LAMPSHADE_HEIGHT = 1.2f;
 
-// Function prototypes
 void init();
 void display();
 void reshape(int width, int height);
@@ -79,22 +73,23 @@ void setupMaterials();
 void drawCylinder(float radius, float height, int slices);
 void drawSphere(float radius, int slices, int stacks);
 
-// Initialize OpenGL settings
+/**
+ * Initialize OpenGL settings and display control instructions
+ */
 void init() {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);  // Black background
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_LIGHTING);
-    glEnable(GL_LIGHT0);  // Ambient light
-    glEnable(GL_LIGHT1);  // Spotlight from lamp
-    glEnable(GL_COLOR_MATERIAL);
+    glEnable(GL_DEPTH_TEST);                // Enable depth testing for 3D
+    glEnable(GL_LIGHTING);                  // Enable lighting calculations
+    glEnable(GL_LIGHT0);                    // Ambient light source
+    glEnable(GL_LIGHT1);                    // Spotlight from lamp
+    glEnable(GL_COLOR_MATERIAL);            // Allow materials to be set by glColor
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
-    glEnable(GL_NORMALIZE);
-    glShadeModel(GL_SMOOTH);
-    
-    // Enable blending for better visual effects
-    glEnable(GL_BLEND);
+    glEnable(GL_NORMALIZE);                 // Normalize normals after transformations
+    glShadeModel(GL_SMOOTH);                // Smooth shading for better appearance
+    glEnable(GL_BLEND);                     // Enable transparency
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
+    // Print control instructions to console
     std::cout << "Pixar Luxo Lamp Animation" << std::endl;
     std::cout << "=========================" << std::endl;
     std::cout << "Controls:" << std::endl;
@@ -105,25 +100,34 @@ void init() {
     std::cout << "  ESC: Exit" << std::endl;
 }
 
-// Setup lighting
+/**
+ * Configure two light sources:
+ * - GL_LIGHT0: Weak ambient light to create dark scene
+ * - GL_LIGHT1: Bright spotlight emanating from lampshade
+ */
 void setupLighting() {
-    // Ambient light - very low to show spotlight effect
+    // --------------------------------------------------------------------
+    // GL_LIGHT0: Low ambient light to enhance spotlight effect
+    // --------------------------------------------------------------------
     GLfloat ambientLight[] = {0.05f, 0.05f, 0.05f, 1.0f};
-    GLfloat lightPos0[] = {5.0f, 10.0f, 5.0f, 0.0f};
+    GLfloat lightPos0[] = {5.0f, 10.0f, 5.0f, 0.0f};  // Directional light
     GLfloat diffuseLight[] = {0.1f, 0.1f, 0.1f, 1.0f};
     glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight);
     glLightfv(GL_LIGHT0, GL_POSITION, lightPos0);
     
-    // Spotlight from lamp (GL_LIGHT1)
+    // --------------------------------------------------------------------
+    // GL_LIGHT1: Dynamic spotlight from lampshade
+    // --------------------------------------------------------------------
     if (spotlightEnabled) {
         glEnable(GL_LIGHT1);
         
-        // Save current modelview matrix
+        // Save current matrix and start fresh
         glPushMatrix();
-        glLoadIdentity();  // Start with clean identity matrix
+        glLoadIdentity();
         
-        // Calculate spotlight position and direction based on lamp joints
+        // Apply the same transformation hierarchy as the lamp geometry
+        // This ensures the light position and direction match the lampshade
         glRotatef(lampJoints.baseRotation, 0.0f, 1.0f, 0.0f);
         glTranslatef(0.0f, BASE_HEIGHT, 0.0f);
         glRotatef(lampJoints.lowerArmAngle, 1.0f, 0.0f, 0.0f);
@@ -132,50 +136,40 @@ void setupLighting() {
         glTranslatef(0.0f, UPPER_ARM_LENGTH, 0.0f);
         glRotatef(lampJoints.lampshadeAngle, 1.0f, 0.0f, 0.0f);
         glRotatef(lampJoints.lampshadeRotation, 0.0f, 1.0f, 0.0f);
-        glTranslatef(0.0f, ARM_RADIUS * 1.5f, 0.0f); // Move past joint sphere
+        glTranslatef(0.0f, ARM_RADIUS * 1.5f, 0.0f);  // Move past joint sphere
         
-        // --- PHẦN SỬA LỖI (FIX START) ---
-        
-        // 1. Xoay -90 độ trục X giống như hàm drawLampshade
-        // Để hệ tọa độ ánh sáng trùng khớp với hệ tọa độ vẽ hình nón
+        // Align coordinate system with lampshade geometry
+        // The lampshade is drawn with -90° rotation, so we match that here
         glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
         
-        // 2. Dịch chuyển nguồn sáng xuống "bụng" hoặc "miệng" đèn
-        // gluCylinder vẽ từ Z=0 đến Z=Height. 
-        // Ta đặt đèn ở khoảng 60% chiều cao chao đèn để ánh sáng tỏa ra từ bên trong.
+        // Position light source inside lampshade at 60% depth
+        // This creates the effect of light emanating from within
         glTranslatef(0.0f, 0.0f, LAMPSHADE_HEIGHT * 0.6f);
         
-        // Get current position for spotlight
+        // Extract the final world-space position and direction from the matrix
         GLfloat modelview[16];
         glGetFloatv(GL_MODELVIEW_MATRIX, modelview);
         
-        // Vị trí (Cột thứ 4 của ma trận)
+        // Position is the translation component (4th column)
         GLfloat spotPosition[] = {modelview[12], modelview[13], modelview[14], 1.0f};
         
-        // Hướng (Cột thứ 3 của ma trận - Trục Z)
-        // Vì ta đã xoay -90 độ, hướng chao đèn mở rộng chính là hướng Dương của trục Z (Positive Z)
-        GLfloat spotDirection[] = {
-            modelview[8],  // Z column X component
-            modelview[9],  // Z column Y component
-            modelview[10]  // Z column Z component
-        };
+        // Direction is the transformed Z-axis (3rd column)
+        // After our transformations, +Z points in the direction the lampshade opens
+        GLfloat spotDirection[] = {modelview[8], modelview[9], modelview[10]};
         
-        // --- PHẦN SỬA LỖI (FIX END) ---
+        glPopMatrix();  // Restore previous matrix
         
-        glPopMatrix();  // Restore matrix
+        // Spotlight properties: Warm, bright yellow-white light
+        GLfloat spotDiffuse[] = {3.0f, 2.5f, 1.5f, 1.0f};    // Warm yellow-white
+        GLfloat spotSpecular[] = {2.0f, 2.0f, 2.0f, 1.0f};   // White highlights
         
-        // Spotlight properties - very bright warm light
-        GLfloat spotDiffuse[] = {3.0f, 2.5f, 1.5f, 1.0f};  // Very bright yellow-white
-        GLfloat spotSpecular[] = {2.0f, 2.0f, 2.0f, 1.0f};
-        
+        // Apply all spotlight properties
         glLightfv(GL_LIGHT1, GL_POSITION, spotPosition);
         glLightfv(GL_LIGHT1, GL_DIFFUSE, spotDiffuse);
         glLightfv(GL_LIGHT1, GL_SPECULAR, spotSpecular);
         glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, spotDirection);
-        
-        // Điều chỉnh lại góc mở (Cutoff) rộng hơn một chút để thấy rõ hiệu ứng từ miệng đèn
-        glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 60.0f); 
-        glLightf(GL_LIGHT1, GL_SPOT_EXPONENT, 15.0f);
+        glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 60.0f);          // 60° cone angle
+        glLightf(GL_LIGHT1, GL_SPOT_EXPONENT, 15.0f);        // Moderate falloff
         glLightf(GL_LIGHT1, GL_CONSTANT_ATTENUATION, 0.5f);
         glLightf(GL_LIGHT1, GL_LINEAR_ATTENUATION, 0.02f);
         glLightf(GL_LIGHT1, GL_QUADRATIC_ATTENUATION, 0.005f);
@@ -184,39 +178,52 @@ void setupLighting() {
     }
 }
 
-// Draw a cylinder
+/**
+ * Draw a cylinder using GLU quadrics
+ * @param radius - Cylinder radius
+ * @param height - Cylinder height
+ * @param slices - Number of subdivisions around the Z-axis
+ */
 void drawCylinder(float radius, float height, int slices) {
     GLUquadric* quad = gluNewQuadric();
-    gluQuadricNormals(quad, GLU_SMOOTH);
+    gluQuadricNormals(quad, GLU_SMOOTH);  // Generate smooth normals
     gluCylinder(quad, radius, radius, height, slices, 1);
     gluDeleteQuadric(quad);
 }
 
-// Draw a sphere
+/**
+ * Draw a sphere using GLU quadrics
+ * @param radius - Sphere radius
+ * @param slices - Number of subdivisions around the Z-axis
+ * @param stacks - Number of subdivisions along the Z-axis
+ */
 void drawSphere(float radius, int slices, int stacks) {
     GLUquadric* quad = gluNewQuadric();
-    gluQuadricNormals(quad, GLU_SMOOTH);
+    gluQuadricNormals(quad, GLU_SMOOTH);  // Generate smooth normals
     gluSphere(quad, radius, slices, stacks);
     gluDeleteQuadric(quad);
 }
 
-// Draw lamp base
+/**
+ * Draw the circular base of the lamp
+ * Material: Dark metallic gray with high specular for metal appearance
+ */
 void drawBase() {
-    // Dark metallic gray
+    // Set material properties for dark metal
     GLfloat baseMaterial[] = {0.2f, 0.2f, 0.22f, 1.0f};
-    GLfloat baseSpecular[] = {0.9f, 0.9f, 0.95f, 1.0f};  // High specular for metal
-    GLfloat baseShininess[] = {80.0f};  // Increased shininess
+    GLfloat baseSpecular[] = {0.9f, 0.9f, 0.95f, 1.0f};  // High shine
+    GLfloat baseShininess[] = {80.0f};
     
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, baseMaterial);
     glMaterialfv(GL_FRONT, GL_SPECULAR, baseSpecular);
     glMaterialfv(GL_FRONT, GL_SHININESS, baseShininess);
     
-    // Draw circular base
     glPushMatrix();
+    // Rotate -90° so cylinder points upward (Y-axis)
     glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
     drawCylinder(BASE_RADIUS, BASE_HEIGHT, 32);
     
-    // Base top cap
+    // Draw top cap to close the cylinder
     GLUquadric* quad = gluNewQuadric();
     gluQuadricNormals(quad, GLU_SMOOTH);
     glTranslatef(0.0f, 0.0f, BASE_HEIGHT);
@@ -225,40 +232,53 @@ void drawBase() {
     glPopMatrix();
 }
 
-// Draw arm segment
+/**
+ * Draw an arm segment (cylinder)
+ * Material: Dark metallic with blue-gray tint
+ * @param length - Length of the arm segment
+ */
 void drawArm(float length) {
-    // Dark metallic with blue-gray tint
+    // Set material properties for metallic arm
     GLfloat armMaterial[] = {0.25f, 0.25f, 0.28f, 1.0f};
-    GLfloat armSpecular[] = {0.95f, 0.95f, 1.0f, 1.0f};  // High specular for metal
-    GLfloat armShininess[] = {100.0f};  // Very shiny metal
+    GLfloat armSpecular[] = {0.95f, 0.95f, 1.0f, 1.0f};  // Very shiny
+    GLfloat armShininess[] = {100.0f};
     
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, armMaterial);
     glMaterialfv(GL_FRONT, GL_SPECULAR, armSpecular);
     glMaterialfv(GL_FRONT, GL_SHININESS, armShininess);
     
     glPushMatrix();
+    // Rotate so cylinder extends along Y-axis
     glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
     drawCylinder(ARM_RADIUS, length, 16);
     glPopMatrix();
 }
 
-// Draw joint sphere
+/**
+ * Draw a joint sphere that connects arm segments
+ * Material: Polished dark metal with chrome-like finish
+ */
 void drawJoint() {
-    // Polished dark metal
+    // Set material properties for chrome-like joint
     GLfloat jointMaterial[] = {0.22f, 0.22f, 0.25f, 1.0f};
-    GLfloat jointSpecular[] = {1.0f, 1.0f, 1.0f, 1.0f};  // Very high specular
-    GLfloat jointShininess[] = {120.0f};  // Chrome-like finish
+    GLfloat jointSpecular[] = {1.0f, 1.0f, 1.0f, 1.0f};    // Maximum shine
+    GLfloat jointShininess[] = {120.0f};                    // Very sharp highlights
     
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, jointMaterial);
     glMaterialfv(GL_FRONT, GL_SPECULAR, jointSpecular);
     glMaterialfv(GL_FRONT, GL_SHININESS, jointShininess);
     
+    // Joint sphere is slightly larger than arm radius
     drawSphere(ARM_RADIUS * 1.5f, 16, 16);
 }
 
-// Draw lampshade
+/**
+ * Draw the lampshade (cone shape)
+ * Material: Dark gray with slight blue tint
+ * Shape: Narrow at top (joint), wide at bottom (opening)
+ */
 void drawLampshade() {
-    // Dark gray lampshade with slight blue tint
+    // Set material properties for lampshade
     GLfloat shadeMaterial[] = {0.3f, 0.3f, 0.35f, 1.0f};
     GLfloat shadeSpecular[] = {0.8f, 0.8f, 0.85f, 1.0f};
     GLfloat shadeShininess[] = {90.0f};
@@ -268,23 +288,26 @@ void drawLampshade() {
     glMaterialfv(GL_FRONT, GL_SHININESS, shadeShininess);
     
     glPushMatrix();
-    glTranslatef(0.0f, ARM_RADIUS * 1.5f, 0.0f);  // Move past joint sphere
-    glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);  // Rotate -90 degrees to point downward
+    // Move past the joint sphere
+    glTranslatef(0.0f, ARM_RADIUS * 1.5f, 0.0f);
+    // Rotate -90° so the cone points downward
+    glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
     
-    // Draw cone for lampshade (narrow at top/joint, wide at bottom/opening)
     GLUquadric* quad = gluNewQuadric();
     gluQuadricNormals(quad, GLU_SMOOTH);
+    
+    // Draw cone: narrow at top (0.4 * radius), wide at bottom (radius)
     gluCylinder(quad, LAMPSHADE_RADIUS * 0.4f, LAMPSHADE_RADIUS, LAMPSHADE_HEIGHT, 32, 1);
     
-    // Draw top rim (wide opening)
+    // Draw top rim to close the cone
     gluDisk(quad, LAMPSHADE_RADIUS * 0.4f, LAMPSHADE_RADIUS, 32, 1);
     
-    // Inner glow at bottom opening when light is on
+    // Draw inner glow at bottom opening when spotlight is on
     if (spotlightEnabled) {
-        glDisable(GL_LIGHTING);
+        glDisable(GL_LIGHTING);  // Draw unlit for glowing effect
         glColor4f(1.0f, 0.9f, 0.2f, 0.9f);  // Bright warm yellow
         glTranslatef(0.0f, 0.0f, LAMPSHADE_HEIGHT);  // Move to bottom opening
-        gluDisk(quad, 0.0f, LAMPSHADE_RADIUS * 0.5f, 32, 1);  // Glow disk at opening
+        gluDisk(quad, 0.0f, LAMPSHADE_RADIUS * 0.5f, 32, 1);
         glEnable(GL_LIGHTING);
     }
     
@@ -292,29 +315,34 @@ void drawLampshade() {
     glPopMatrix();
 }
 
-// Draw table surface
+/**
+ * Draw the table surface as a subdivided grid
+ * Subdivision improves per-vertex lighting calculation, making the spotlight
+ * appear as a smooth gradient instead of interpolated across 4 corners
+ */
 void drawTable() {
-    // Giữ nguyên phần cài đặt Material
-    GLfloat tableMaterial[] = {0.4f, 0.4f, 0.4f, 1.0f};  // Medium gray
-    GLfloat tableSpecular[] = {0.2f, 0.2f, 0.2f, 1.0f};
-    GLfloat tableShininess[] = {10.0f};
+    // Set material properties for matte table surface
+    GLfloat tableMaterial[] = {0.4f, 0.4f, 0.4f, 1.0f};   // Medium gray
+    GLfloat tableSpecular[] = {0.2f, 0.2f, 0.2f, 1.0f};   // Low specular
+    GLfloat tableShininess[] = {10.0f};                    // Dull surface
     
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, tableMaterial);
     glMaterialfv(GL_FRONT, GL_SPECULAR, tableSpecular);
     glMaterialfv(GL_FRONT, GL_SHININESS, tableShininess);
     
     glPushMatrix();
-    glTranslatef(0.0f, -0.1f, 0.0f);
+    glTranslatef(0.0f, -0.1f, 0.0f);  // Slightly below origin
     
-    // --- SỬA LỖI: Chia nhỏ mặt bàn thành lưới ---
-    // Thay vì vẽ 1 hình vuông lớn, ta vẽ hàng trăm hình vuông nhỏ
+    // Grid parameters for table subdivision
     float start = -10.0f;
     float end = 10.0f;
-    float step = 0.5f; // Độ mịn của lưới (càng nhỏ ánh sáng càng đẹp nhưng nặng máy hơn)
+    float step = 0.5f;  // Smaller step = finer grid = better lighting quality
 
     glBegin(GL_QUADS);
-    glNormal3f(0.0f, 1.0f, 0.0f); // Pháp tuyến hướng lên trên cho tất cả các ô
+    glNormal3f(0.0f, 1.0f, 0.0f);  // All vertices have upward normal
     
+    // Draw grid of small quads instead of one large quad
+    // This allows OpenGL to calculate lighting at more vertices
     for (float x = start; x < end; x += step) {
         for (float z = start; z < end; z += step) {
             glVertex3f(x, 0.0f, z);
@@ -324,40 +352,39 @@ void drawTable() {
         }
     }
     glEnd();
-    // -------------------------------------------
 
     glPopMatrix();
 }
 
-// Display callback
+/**
+ * Main display callback - renders the entire scene
+ * Hierarchy: Table -> Lamp (Base -> LowerArm -> UpperArm -> Lampshade)
+ */
 void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
     
-    // Set up camera
+    // Position camera using spherical coordinates
     gluLookAt(
         cameraDistance * cos(cameraAngleY * M_PI / 180.0f) * sin(cameraAngleX * M_PI / 180.0f),
         cameraDistance * sin(cameraAngleY * M_PI / 180.0f),
         cameraDistance * cos(cameraAngleY * M_PI / 180.0f) * cos(cameraAngleX * M_PI / 180.0f),
-        0.0f, 3.0f, 0.0f,
-        0.0f, 1.0f, 0.0f
+        0.0f, 3.0f, 0.0f,  // Look at point slightly above origin
+        0.0f, 1.0f, 0.0f   // Up vector
     );
     
     setupLighting();
-    
-    // Draw table
     drawTable();
     
-    // Draw lamp
     glPushMatrix();
     
-    // Base rotation
+    // Level 1: Base rotation (Y-axis)
     glRotatef(lampJoints.baseRotation, 0.0f, 1.0f, 0.0f);
     
-    // Highlight selected joint
+    // Draw selection highlight for base
     if (selectedJoint == BASE) {
         glDisable(GL_LIGHTING);
-        glColor3f(1.0f, 1.0f, 0.0f);
+        glColor3f(1.0f, 1.0f, 0.0f);  // Yellow wireframe
         glPushMatrix();
         glTranslatef(0.0f, BASE_HEIGHT * 0.5f, 0.0f);
         glutWireCube(BASE_RADIUS * 2.2f);
@@ -366,54 +393,53 @@ void display() {
     }
     
     drawBase();
+    glTranslatef(0.0f, BASE_HEIGHT, 0.0f);  // Move up to top of base
     
-    // Lower arm joint
-    glTranslatef(0.0f, BASE_HEIGHT, 0.0f);
-    
+    // Level 2: Lower arm joint
     if (selectedJoint == LOWER_ARM) {
         glDisable(GL_LIGHTING);
-        glColor3f(1.0f, 1.0f, 0.0f);
+        glColor3f(1.0f, 1.0f, 0.0f);  // Yellow wireframe
         glutWireSphere(ARM_RADIUS * 2.5f, 16, 16);
         glEnable(GL_LIGHTING);
     }
     
     drawJoint();
-    glRotatef(lampJoints.lowerArmAngle, 1.0f, 0.0f, 0.0f);
+    glRotatef(lampJoints.lowerArmAngle, 1.0f, 0.0f, 0.0f);  // Rotate lower arm
     drawArm(LOWER_ARM_LENGTH);
+    glTranslatef(0.0f, LOWER_ARM_LENGTH, 0.0f);  // Move to end of lower arm
     
-    // Upper arm joint
-    glTranslatef(0.0f, LOWER_ARM_LENGTH, 0.0f);
-    
+    // Level 3: Upper arm joint
     if (selectedJoint == UPPER_ARM) {
         glDisable(GL_LIGHTING);
-        glColor3f(1.0f, 1.0f, 0.0f);
+        glColor3f(1.0f, 1.0f, 0.0f);  // Yellow wireframe
         glutWireSphere(ARM_RADIUS * 2.5f, 16, 16);
         glEnable(GL_LIGHTING);
     }
     
     drawJoint();
-    glRotatef(lampJoints.upperArmAngle, 1.0f, 0.0f, 0.0f);
+    glRotatef(lampJoints.upperArmAngle, 1.0f, 0.0f, 0.0f);  // Rotate upper arm
     drawArm(UPPER_ARM_LENGTH);
+    glTranslatef(0.0f, UPPER_ARM_LENGTH, 0.0f);  // Move to end of upper arm
     
-    // Lampshade joint
-    glTranslatef(0.0f, UPPER_ARM_LENGTH, 0.0f);
-    
+    // Level 4: Lampshade joint
     if (selectedJoint == LAMPSHADE) {
         glDisable(GL_LIGHTING);
-        glColor3f(1.0f, 1.0f, 0.0f);
+        glColor3f(1.0f, 1.0f, 0.0f);  // Yellow wireframe
         glutWireSphere(ARM_RADIUS * 2.5f, 16, 16);
         glEnable(GL_LIGHTING);
     }
     
     drawJoint();
-    glRotatef(lampJoints.lampshadeAngle, 1.0f, 0.0f, 0.0f);
-    glRotatef(lampJoints.lampshadeRotation, 0.0f, 1.0f, 0.0f);
+    glRotatef(lampJoints.lampshadeAngle, 1.0f, 0.0f, 0.0f);      // Tilt
+    glRotatef(lampJoints.lampshadeRotation, 0.0f, 1.0f, 0.0f);   // Spin
     drawLampshade();
     
     glPopMatrix();
     
-    // Display current selection
+    // Draw 2D UI text overlay
     glDisable(GL_LIGHTING);
+    
+    // Switch to orthographic projection for 2D text
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
@@ -422,6 +448,7 @@ void display() {
     glPushMatrix();
     glLoadIdentity();
     
+    // Display selected joint name
     glColor3f(1.0f, 1.0f, 1.0f);
     glRasterPos2f(10, WINDOW_HEIGHT - 20);
     const char* jointNames[] = {"Base", "Lower Arm", "Upper Arm", "Lampshade"};
@@ -430,34 +457,45 @@ void display() {
         glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
     }
     
+    // Display spotlight status
     glRasterPos2f(10, WINDOW_HEIGHT - 45);
     std::string lightInfo = spotlightEnabled ? "Spotlight: ON" : "Spotlight: OFF";
     for (char c : lightInfo) {
         glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
     }
     
+    // Restore previous projection
     glPopMatrix();
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
     glEnable(GL_LIGHTING);
     
-    glutSwapBuffers();
+    glutSwapBuffers();  // Swap front and back buffers
 }
 
-// Reshape callback
+/**
+ * Reshape callback - called when window is resized
+ * @param width - New window width
+ * @param height - New window height
+ */
 void reshape(int width, int height) {
-    if (height == 0) height = 1;
+    if (height == 0) height = 1;  // Prevent division by zero
     float aspect = (float)width / (float)height;
     
     glViewport(0, 0, width, height);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(45.0f, aspect, 0.1f, 100.0f);
+    gluPerspective(45.0f, aspect, 0.1f, 100.0f);  // 45° FOV
     glMatrixMode(GL_MODELVIEW);
 }
 
-// Keyboard callback
+/**
+ * Keyboard callback - handles number keys and special commands
+ * @param key - ASCII character code
+ * @param x - Mouse X position (unused)
+ * @param y - Mouse Y position (unused)
+ */
 void keyboard(unsigned char key, int x, int y) {
     switch (key) {
         case '1':
@@ -483,6 +521,7 @@ void keyboard(unsigned char key, int x, int y) {
             break;
         case 'r':
         case 'R':
+            // Reset all joints to default configuration
             lampJoints.baseRotation = 0.0f;
             lampJoints.lowerArmAngle = 45.0f;
             lampJoints.upperArmAngle = -60.0f;
@@ -490,19 +529,25 @@ void keyboard(unsigned char key, int x, int y) {
             lampJoints.lampshadeRotation = 0.0f;
             std::cout << "Reset to default position" << std::endl;
             break;
-        case 27: // ESC
+        case 27:  // ESC key
             exit(0);
             break;
     }
-    glutPostRedisplay();
+    glutPostRedisplay();  // Request scene redraw
 }
 
-// Special keys callback
+/**
+ * Special keys callback - handles arrow keys for joint rotation
+ * @param key - GLUT special key code
+ * @param x - Mouse X position (unused)
+ * @param y - Mouse Y position (unused)
+ */
 void specialKeys(int key, int x, int y) {
-    const float rotationStep = 3.0f;
+    const float rotationStep = 3.0f;  // Degrees per keypress
     
     switch (key) {
         case GLUT_KEY_LEFT:
+            // Base and lampshade use left/right for Y-axis rotation
             if (selectedJoint == BASE) {
                 lampJoints.baseRotation -= rotationStep;
             } else if (selectedJoint == LAMPSHADE) {
@@ -517,6 +562,7 @@ void specialKeys(int key, int x, int y) {
             }
             break;
         case GLUT_KEY_UP:
+            // Arms and lampshade use up/down for X-axis rotation with limits
             if (selectedJoint == LOWER_ARM) {
                 lampJoints.lowerArmAngle += rotationStep;
                 lampJoints.lowerArmAngle = fmin(lampJoints.lowerArmAngle, 90.0f);
@@ -542,24 +588,28 @@ void specialKeys(int key, int x, int y) {
             break;
     }
     
-    glutPostRedisplay();
+    glutPostRedisplay();  // Request scene redraw
 }
 
-// Main function
+
 int main(int argc, char** argv) {
+    // Initialize GLUT
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
     glutInitWindowPosition(100, 100);
     glutCreateWindow("Pixar Luxo Lamp Animation");
     
+    // Initialize OpenGL settings
     init();
     
+    // Register callback functions
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
     glutKeyboardFunc(keyboard);
     glutSpecialFunc(specialKeys);
     
+    // Enter main event loop (never returns)
     glutMainLoop();
     return 0;
 }
