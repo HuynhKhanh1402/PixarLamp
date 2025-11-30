@@ -272,10 +272,10 @@ void drawLampshade() {
 
 // Draw table surface
 void drawTable() {
-    // Dark gray table to show spotlight clearly
-    GLfloat tableMaterial[] = {0.15f, 0.15f, 0.15f, 1.0f};
-    GLfloat tableSpecular[] = {0.1f, 0.1f, 0.1f, 1.0f};
-    GLfloat tableShininess[] = {8.0f};
+    // Medium gray table to show spotlight effect clearly
+    GLfloat tableMaterial[] = {0.4f, 0.4f, 0.4f, 1.0f};  // Medium gray
+    GLfloat tableSpecular[] = {0.2f, 0.2f, 0.2f, 1.0f};
+    GLfloat tableShininess[] = {10.0f};
     
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, tableMaterial);
     glMaterialfv(GL_FRONT, GL_SPECULAR, tableSpecular);
