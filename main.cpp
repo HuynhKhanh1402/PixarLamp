@@ -107,10 +107,12 @@ void init() {
 
 // Setup lighting
 void setupLighting() {
-    // Ambient light
-    GLfloat ambientLight[] = {0.2f, 0.2f, 0.25f, 1.0f};
+    // Ambient light - very low to show spotlight effect
+    GLfloat ambientLight[] = {0.05f, 0.05f, 0.05f, 1.0f};
     GLfloat lightPos0[] = {5.0f, 10.0f, 5.0f, 0.0f};
+    GLfloat diffuseLight[] = {0.1f, 0.1f, 0.1f, 1.0f};
     glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight);
     glLightfv(GL_LIGHT0, GL_POSITION, lightPos0);
     
     // Spotlight from lamp (GL_LIGHT1)
@@ -134,9 +136,9 @@ void setupLighting() {
         
         glPopMatrix();
         
-        // Spotlight properties
-        GLfloat spotDiffuse[] = {1.0f, 0.95f, 0.8f, 1.0f};
-        GLfloat spotSpecular[] = {1.0f, 1.0f, 1.0f, 1.0f};
+        // Spotlight properties - bright warm light
+        GLfloat spotDiffuse[] = {2.0f, 1.8f, 1.2f, 1.0f};  // Increased intensity
+        GLfloat spotSpecular[] = {1.5f, 1.5f, 1.5f, 1.0f};
         
         // Calculate spotlight direction
         float totalAngleX = lampJoints.lowerArmAngle + lampJoints.upperArmAngle + lampJoints.lampshadeAngle;
@@ -153,11 +155,11 @@ void setupLighting() {
         glLightfv(GL_LIGHT1, GL_DIFFUSE, spotDiffuse);
         glLightfv(GL_LIGHT1, GL_SPECULAR, spotSpecular);
         glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, spotDirection);
-        glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 30.0f);
-        glLightf(GL_LIGHT1, GL_SPOT_EXPONENT, 15.0f);
-        glLightf(GL_LIGHT1, GL_CONSTANT_ATTENUATION, 1.0f);
-        glLightf(GL_LIGHT1, GL_LINEAR_ATTENUATION, 0.05f);
-        glLightf(GL_LIGHT1, GL_QUADRATIC_ATTENUATION, 0.01f);
+        glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 35.0f);  // Wider cone
+        glLightf(GL_LIGHT1, GL_SPOT_EXPONENT, 20.0f);  // Sharper falloff
+        glLightf(GL_LIGHT1, GL_CONSTANT_ATTENUATION, 0.5f);
+        glLightf(GL_LIGHT1, GL_LINEAR_ATTENUATION, 0.02f);
+        glLightf(GL_LIGHT1, GL_QUADRATIC_ATTENUATION, 0.005f);
     } else {
         glDisable(GL_LIGHT1);
     }
