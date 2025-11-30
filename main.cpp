@@ -128,29 +128,29 @@ void setupLighting() {
         glRotatef(lampJoints.upperArmAngle, 1.0f, 0.0f, 0.0f);
         glTranslatef(0.0f, UPPER_ARM_LENGTH, 0.0f);
         glRotatef(lampJoints.lampshadeAngle, 1.0f, 0.0f, 0.0f);
+        glRotatef(lampJoints.lampshadeRotation, 0.0f, 1.0f, 0.0f);  // Add Y-axis rotation
+        glTranslatef(0.0f, ARM_RADIUS * 1.5f, 0.0f);  // Move past joint sphere
+        glTranslatef(0.0f, 0.0f, LAMPSHADE_HEIGHT * 0.5f);  // Position at lampshade center
         
-        // Get current position for spotlight
+        // Get current position and direction for spotlight
         GLfloat modelview[16];
         glGetFloatv(GL_MODELVIEW_MATRIX, modelview);
         GLfloat spotPosition[] = {modelview[12], modelview[13], modelview[14], 1.0f};
+        
+        // Extract direction from transformation matrix
+        // The lampshade points downward in local space along negative Z after rotation
+        // The Z column of the matrix gives us the transformed Z-axis direction
+        GLfloat spotDirection[] = {
+            -modelview[8],   // -Z column X component (inverted for downward)
+            -modelview[9],   // -Z column Y component  
+            -modelview[10]   // -Z column Z component
+        };
         
         glPopMatrix();
         
         // Spotlight properties - very bright warm light
         GLfloat spotDiffuse[] = {3.0f, 2.5f, 1.5f, 1.0f};  // Very bright yellow-white
         GLfloat spotSpecular[] = {2.0f, 2.0f, 2.0f, 1.0f};
-        
-        // Calculate spotlight direction (pointing downward from lampshade)
-        float totalAngleX = lampJoints.lowerArmAngle + lampJoints.upperArmAngle + lampJoints.lampshadeAngle;
-        float radAngleY = lampJoints.baseRotation * M_PI / 180.0f;
-        float radAngleX = totalAngleX * M_PI / 180.0f;
-        
-        // Direction vector pointing down from the lamp
-        GLfloat spotDirection[] = {
-            sin(radAngleY) * sin(radAngleX),
-            -cos(radAngleX),  // Main downward component
-            cos(radAngleY) * sin(radAngleX)
-        };
         
         glLightfv(GL_LIGHT1, GL_POSITION, spotPosition);
         glLightfv(GL_LIGHT1, GL_DIFFUSE, spotDiffuse);
@@ -250,12 +250,13 @@ void drawLampshade() {
     glMaterialfv(GL_FRONT, GL_SHININESS, shadeShininess);
     
     glPushMatrix();
-    glRotatef(90.0f, 1.0f, 0.0f, 0.0f);  // Rotate 90 degrees to point downward
+    glTranslatef(0.0f, ARM_RADIUS * 1.5f, 0.0f);  // Move past joint sphere
+    glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);  // Rotate -90 degrees to point downward
     
-    // Draw cone for lampshade (wide at top, narrow at bottom)
+    // Draw cone for lampshade (narrow at top/joint, wide at bottom/opening)
     GLUquadric* quad = gluNewQuadric();
     gluQuadricNormals(quad, GLU_SMOOTH);
-    gluCylinder(quad, LAMPSHADE_RADIUS, LAMPSHADE_RADIUS * 0.4f, LAMPSHADE_HEIGHT, 32, 1);
+    gluCylinder(quad, LAMPSHADE_RADIUS * 0.4f, LAMPSHADE_RADIUS, LAMPSHADE_HEIGHT, 32, 1);
     
     // Draw top rim (wide opening)
     gluDisk(quad, LAMPSHADE_RADIUS * 0.4f, LAMPSHADE_RADIUS, 32, 1);
