@@ -312,8 +312,7 @@ void drawLampshade()
     // Draw cone: narrow at top (0.4 * radius), wide at bottom (radius)
     gluCylinder(quad, LAMPSHADE_RADIUS * 0.4f, LAMPSHADE_RADIUS, LAMPSHADE_HEIGHT, 32, 1);
 
-    // Draw top rim to close the cone
-    gluDisk(quad, LAMPSHADE_RADIUS * 0.4f, LAMPSHADE_RADIUS, 32, 1);
+    gluDisk(quad, 0.0f, LAMPSHADE_RADIUS * 0.4f, 32, 1);
 
     // Draw inner glow at bottom opening when spotlight is on
     if (spotlightEnabled)
