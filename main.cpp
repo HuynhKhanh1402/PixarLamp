@@ -136,27 +136,28 @@ void setupLighting() {
         
         glPopMatrix();
         
-        // Spotlight properties - bright warm light
-        GLfloat spotDiffuse[] = {2.0f, 1.8f, 1.2f, 1.0f};  // Increased intensity
-        GLfloat spotSpecular[] = {1.5f, 1.5f, 1.5f, 1.0f};
+        // Spotlight properties - very bright warm light
+        GLfloat spotDiffuse[] = {3.0f, 2.5f, 1.5f, 1.0f};  // Very bright yellow-white
+        GLfloat spotSpecular[] = {2.0f, 2.0f, 2.0f, 1.0f};
         
-        // Calculate spotlight direction
+        // Calculate spotlight direction (pointing downward from lampshade)
         float totalAngleX = lampJoints.lowerArmAngle + lampJoints.upperArmAngle + lampJoints.lampshadeAngle;
         float radAngleY = lampJoints.baseRotation * M_PI / 180.0f;
         float radAngleX = totalAngleX * M_PI / 180.0f;
         
+        // Direction vector pointing down from the lamp
         GLfloat spotDirection[] = {
-            sin(radAngleY) * cos(radAngleX),
-            -sin(radAngleX),
-            cos(radAngleY) * cos(radAngleX)
+            sin(radAngleY) * sin(radAngleX),
+            -cos(radAngleX),  // Main downward component
+            cos(radAngleY) * sin(radAngleX)
         };
         
         glLightfv(GL_LIGHT1, GL_POSITION, spotPosition);
         glLightfv(GL_LIGHT1, GL_DIFFUSE, spotDiffuse);
         glLightfv(GL_LIGHT1, GL_SPECULAR, spotSpecular);
         glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, spotDirection);
-        glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 35.0f);  // Wider cone
-        glLightf(GL_LIGHT1, GL_SPOT_EXPONENT, 20.0f);  // Sharper falloff
+        glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 40.0f);  // Wide cone for visible light pool
+        glLightf(GL_LIGHT1, GL_SPOT_EXPONENT, 10.0f);  // Softer falloff for visible gradient
         glLightf(GL_LIGHT1, GL_CONSTANT_ATTENUATION, 0.5f);
         glLightf(GL_LIGHT1, GL_LINEAR_ATTENUATION, 0.02f);
         glLightf(GL_LIGHT1, GL_QUADRATIC_ATTENUATION, 0.005f);
@@ -249,22 +250,22 @@ void drawLampshade() {
     glMaterialfv(GL_FRONT, GL_SHININESS, shadeShininess);
     
     glPushMatrix();
-    glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+    glRotatef(90.0f, 1.0f, 0.0f, 0.0f);  // Rotate 90 degrees to point downward
     
-    // Draw cone for lampshade
+    // Draw cone for lampshade (wide at top, narrow at bottom)
     GLUquadric* quad = gluNewQuadric();
     gluQuadricNormals(quad, GLU_SMOOTH);
     gluCylinder(quad, LAMPSHADE_RADIUS, LAMPSHADE_RADIUS * 0.4f, LAMPSHADE_HEIGHT, 32, 1);
     
-    // Draw rim
+    // Draw top rim (wide opening)
     gluDisk(quad, LAMPSHADE_RADIUS * 0.4f, LAMPSHADE_RADIUS, 32, 1);
     
-    // Inner glow when light is on
+    // Inner glow at bottom opening when light is on
     if (spotlightEnabled) {
         glDisable(GL_LIGHTING);
-        glColor4f(1.0f, 0.9f, 0.3f, 1.0f);  // Bright warm yellow
-        glTranslatef(0.0f, 0.0f, LAMPSHADE_HEIGHT * 0.5f);
-        gluDisk(quad, 0.0f, LAMPSHADE_RADIUS * 0.6f, 32, 1);
+        glColor4f(1.0f, 0.9f, 0.2f, 0.9f);  // Bright warm yellow
+        glTranslatef(0.0f, 0.0f, LAMPSHADE_HEIGHT);  // Move to bottom opening
+        gluDisk(quad, 0.0f, LAMPSHADE_RADIUS * 0.5f, 32, 1);  // Glow disk at opening
         glEnable(GL_LIGHTING);
     }
     
