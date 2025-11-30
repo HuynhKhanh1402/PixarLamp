@@ -119,8 +119,11 @@ void setupLighting() {
     if (spotlightEnabled) {
         glEnable(GL_LIGHT1);
         
-        // Calculate spotlight position and direction based on lamp joints
+        // Save current modelview matrix
         glPushMatrix();
+        glLoadIdentity();  // Start with clean identity matrix
+        
+        // Calculate spotlight position and direction based on lamp joints
         glRotatef(lampJoints.baseRotation, 0.0f, 1.0f, 0.0f);
         glTranslatef(0.0f, BASE_HEIGHT, 0.0f);
         glRotatef(lampJoints.lowerArmAngle, 1.0f, 0.0f, 0.0f);
@@ -128,25 +131,37 @@ void setupLighting() {
         glRotatef(lampJoints.upperArmAngle, 1.0f, 0.0f, 0.0f);
         glTranslatef(0.0f, UPPER_ARM_LENGTH, 0.0f);
         glRotatef(lampJoints.lampshadeAngle, 1.0f, 0.0f, 0.0f);
-        glRotatef(lampJoints.lampshadeRotation, 0.0f, 1.0f, 0.0f);  // Add Y-axis rotation
+        glRotatef(lampJoints.lampshadeRotation, 0.0f, 1.0f, 0.0f);
         glTranslatef(0.0f, ARM_RADIUS * 1.5f, 0.0f);  // Move past joint sphere
-        glTranslatef(0.0f, 0.0f, LAMPSHADE_HEIGHT * 0.5f);  // Position at lampshade center
         
-        // Get current position and direction for spotlight
+        // Get current position for spotlight (at lampshade opening)
         GLfloat modelview[16];
         glGetFloatv(GL_MODELVIEW_MATRIX, modelview);
         GLfloat spotPosition[] = {modelview[12], modelview[13], modelview[14], 1.0f};
         
-        // Extract direction from transformation matrix
-        // The lampshade points downward in local space along negative Z after rotation
-        // The Z column of the matrix gives us the transformed Z-axis direction
+        // Calculate spotlight direction (pointing down from lampshade)
+        // The lampshade points downward, so we use negative Y-axis in local space
+        // Transform the local down vector (0, -1, 0) by the rotation matrix
         GLfloat spotDirection[] = {
-            -modelview[8],   // -Z column X component (inverted for downward)
-            -modelview[9],   // -Z column Y component  
-            -modelview[10]   // -Z column Z component
+            modelview[4],   // Y column X component (local Y-axis transformed)
+            modelview[5],   // Y column Y component
+            modelview[6]    // Y column Z component
         };
         
-        glPopMatrix();
+        // Normalize the direction vector
+        float length = sqrt(spotDirection[0] * spotDirection[0] + 
+                          spotDirection[1] * spotDirection[1] + 
+                          spotDirection[2] * spotDirection[2]);
+        spotDirection[0] /= length;
+        spotDirection[1] /= length;
+        spotDirection[2] /= length;
+        
+        // Invert to point downward
+        spotDirection[0] = -spotDirection[0];
+        spotDirection[1] = -spotDirection[1];
+        spotDirection[2] = -spotDirection[2];
+        
+        glPopMatrix();  // Restore matrix
         
         // Spotlight properties - very bright warm light
         GLfloat spotDiffuse[] = {3.0f, 2.5f, 1.5f, 1.0f};  // Very bright yellow-white
