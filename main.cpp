@@ -294,7 +294,7 @@ void drawLampshade() {
 
 // Draw table surface
 void drawTable() {
-    // Medium gray table to show spotlight effect clearly
+    // Giữ nguyên phần cài đặt Material
     GLfloat tableMaterial[] = {0.4f, 0.4f, 0.4f, 1.0f};  // Medium gray
     GLfloat tableSpecular[] = {0.2f, 0.2f, 0.2f, 1.0f};
     GLfloat tableShininess[] = {10.0f};
@@ -305,13 +305,27 @@ void drawTable() {
     
     glPushMatrix();
     glTranslatef(0.0f, -0.1f, 0.0f);
+    
+    // --- SỬA LỖI: Chia nhỏ mặt bàn thành lưới ---
+    // Thay vì vẽ 1 hình vuông lớn, ta vẽ hàng trăm hình vuông nhỏ
+    float start = -10.0f;
+    float end = 10.0f;
+    float step = 0.5f; // Độ mịn của lưới (càng nhỏ ánh sáng càng đẹp nhưng nặng máy hơn)
+
     glBegin(GL_QUADS);
-        glNormal3f(0.0f, 1.0f, 0.0f);
-        glVertex3f(-10.0f, 0.0f, -10.0f);
-        glVertex3f(-10.0f, 0.0f, 10.0f);
-        glVertex3f(10.0f, 0.0f, 10.0f);
-        glVertex3f(10.0f, 0.0f, -10.0f);
+    glNormal3f(0.0f, 1.0f, 0.0f); // Pháp tuyến hướng lên trên cho tất cả các ô
+    
+    for (float x = start; x < end; x += step) {
+        for (float z = start; z < end; z += step) {
+            glVertex3f(x, 0.0f, z);
+            glVertex3f(x, 0.0f, z + step);
+            glVertex3f(x + step, 0.0f, z + step);
+            glVertex3f(x + step, 0.0f, z);
+        }
+    }
     glEnd();
+    // -------------------------------------------
+
     glPopMatrix();
 }
 
