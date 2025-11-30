@@ -81,7 +81,7 @@ void drawSphere(float radius, int slices, int stacks);
 
 // Initialize OpenGL settings
 void init() {
-    glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);  // Black background
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);  // Ambient light
@@ -181,9 +181,10 @@ void drawSphere(float radius, int slices, int stacks) {
 
 // Draw lamp base
 void drawBase() {
-    GLfloat baseMaterial[] = {0.3f, 0.3f, 0.35f, 1.0f};
-    GLfloat baseSpecular[] = {0.5f, 0.5f, 0.5f, 1.0f};
-    GLfloat baseShininess[] = {32.0f};
+    // Dark metallic gray
+    GLfloat baseMaterial[] = {0.2f, 0.2f, 0.22f, 1.0f};
+    GLfloat baseSpecular[] = {0.9f, 0.9f, 0.95f, 1.0f};  // High specular for metal
+    GLfloat baseShininess[] = {80.0f};  // Increased shininess
     
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, baseMaterial);
     glMaterialfv(GL_FRONT, GL_SPECULAR, baseSpecular);
@@ -205,9 +206,10 @@ void drawBase() {
 
 // Draw arm segment
 void drawArm(float length) {
-    GLfloat armMaterial[] = {0.4f, 0.4f, 0.45f, 1.0f};
-    GLfloat armSpecular[] = {0.6f, 0.6f, 0.6f, 1.0f};
-    GLfloat armShininess[] = {64.0f};
+    // Dark metallic with blue-gray tint
+    GLfloat armMaterial[] = {0.25f, 0.25f, 0.28f, 1.0f};
+    GLfloat armSpecular[] = {0.95f, 0.95f, 1.0f, 1.0f};  // High specular for metal
+    GLfloat armShininess[] = {100.0f};  // Very shiny metal
     
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, armMaterial);
     glMaterialfv(GL_FRONT, GL_SPECULAR, armSpecular);
@@ -221,9 +223,10 @@ void drawArm(float length) {
 
 // Draw joint sphere
 void drawJoint() {
-    GLfloat jointMaterial[] = {0.35f, 0.35f, 0.4f, 1.0f};
-    GLfloat jointSpecular[] = {0.7f, 0.7f, 0.7f, 1.0f};
-    GLfloat jointShininess[] = {96.0f};
+    // Polished dark metal
+    GLfloat jointMaterial[] = {0.22f, 0.22f, 0.25f, 1.0f};
+    GLfloat jointSpecular[] = {1.0f, 1.0f, 1.0f, 1.0f};  // Very high specular
+    GLfloat jointShininess[] = {120.0f};  // Chrome-like finish
     
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, jointMaterial);
     glMaterialfv(GL_FRONT, GL_SPECULAR, jointSpecular);
@@ -234,9 +237,10 @@ void drawJoint() {
 
 // Draw lampshade
 void drawLampshade() {
-    GLfloat shadeMaterial[] = {0.9f, 0.9f, 0.95f, 1.0f};
-    GLfloat shadeSpecular[] = {1.0f, 1.0f, 1.0f, 1.0f};
-    GLfloat shadeShininess[] = {128.0f};
+    // Dark gray lampshade with slight blue tint
+    GLfloat shadeMaterial[] = {0.3f, 0.3f, 0.35f, 1.0f};
+    GLfloat shadeSpecular[] = {0.8f, 0.8f, 0.85f, 1.0f};
+    GLfloat shadeShininess[] = {90.0f};
     
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, shadeMaterial);
     glMaterialfv(GL_FRONT, GL_SPECULAR, shadeSpecular);
@@ -256,7 +260,7 @@ void drawLampshade() {
     // Inner glow when light is on
     if (spotlightEnabled) {
         glDisable(GL_LIGHTING);
-        glColor4f(1.0f, 0.95f, 0.7f, 0.8f);
+        glColor4f(1.0f, 0.9f, 0.3f, 1.0f);  // Bright warm yellow
         glTranslatef(0.0f, 0.0f, LAMPSHADE_HEIGHT * 0.5f);
         gluDisk(quad, 0.0f, LAMPSHADE_RADIUS * 0.6f, 32, 1);
         glEnable(GL_LIGHTING);
@@ -268,9 +272,10 @@ void drawLampshade() {
 
 // Draw table surface
 void drawTable() {
-    GLfloat tableMaterial[] = {0.6f, 0.4f, 0.2f, 1.0f};
-    GLfloat tableSpecular[] = {0.3f, 0.3f, 0.3f, 1.0f};
-    GLfloat tableShininess[] = {16.0f};
+    // Dark gray table to show spotlight clearly
+    GLfloat tableMaterial[] = {0.15f, 0.15f, 0.15f, 1.0f};
+    GLfloat tableSpecular[] = {0.1f, 0.1f, 0.1f, 1.0f};
+    GLfloat tableShininess[] = {8.0f};
     
     glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, tableMaterial);
     glMaterialfv(GL_FRONT, GL_SPECULAR, tableSpecular);

@@ -1,4 +1,7 @@
 # Pixar Luxo Lamp Animation Makefile
+# NOTE: Run './PixarLamp' not './main.o'
+# Object files (.o) are not executable!
+
 # Compiler settings
 CXX = g++
 CXXFLAGS = -Wall -Wextra -std=c++11 -O2
