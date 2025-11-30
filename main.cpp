@@ -132,34 +132,35 @@ void setupLighting() {
         glTranslatef(0.0f, UPPER_ARM_LENGTH, 0.0f);
         glRotatef(lampJoints.lampshadeAngle, 1.0f, 0.0f, 0.0f);
         glRotatef(lampJoints.lampshadeRotation, 0.0f, 1.0f, 0.0f);
-        glTranslatef(0.0f, ARM_RADIUS * 1.5f, 0.0f);  // Move past joint sphere
+        glTranslatef(0.0f, ARM_RADIUS * 1.5f, 0.0f); // Move past joint sphere
         
-        // Get current position for spotlight (at lampshade opening)
+        // --- PHẦN SỬA LỖI (FIX START) ---
+        
+        // 1. Xoay -90 độ trục X giống như hàm drawLampshade
+        // Để hệ tọa độ ánh sáng trùng khớp với hệ tọa độ vẽ hình nón
+        glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+        
+        // 2. Dịch chuyển nguồn sáng xuống "bụng" hoặc "miệng" đèn
+        // gluCylinder vẽ từ Z=0 đến Z=Height. 
+        // Ta đặt đèn ở khoảng 60% chiều cao chao đèn để ánh sáng tỏa ra từ bên trong.
+        glTranslatef(0.0f, 0.0f, LAMPSHADE_HEIGHT * 0.6f);
+        
+        // Get current position for spotlight
         GLfloat modelview[16];
         glGetFloatv(GL_MODELVIEW_MATRIX, modelview);
+        
+        // Vị trí (Cột thứ 4 của ma trận)
         GLfloat spotPosition[] = {modelview[12], modelview[13], modelview[14], 1.0f};
         
-        // Calculate spotlight direction (pointing down from lampshade)
-        // The lampshade points downward, so we use negative Y-axis in local space
-        // Transform the local down vector (0, -1, 0) by the rotation matrix
+        // Hướng (Cột thứ 3 của ma trận - Trục Z)
+        // Vì ta đã xoay -90 độ, hướng chao đèn mở rộng chính là hướng Dương của trục Z (Positive Z)
         GLfloat spotDirection[] = {
-            modelview[4],   // Y column X component (local Y-axis transformed)
-            modelview[5],   // Y column Y component
-            modelview[6]    // Y column Z component
+            modelview[8],  // Z column X component
+            modelview[9],  // Z column Y component
+            modelview[10]  // Z column Z component
         };
         
-        // Normalize the direction vector
-        float length = sqrt(spotDirection[0] * spotDirection[0] + 
-                          spotDirection[1] * spotDirection[1] + 
-                          spotDirection[2] * spotDirection[2]);
-        spotDirection[0] /= length;
-        spotDirection[1] /= length;
-        spotDirection[2] /= length;
-        
-        // Invert to point downward
-        spotDirection[0] = -spotDirection[0];
-        spotDirection[1] = -spotDirection[1];
-        spotDirection[2] = -spotDirection[2];
+        // --- PHẦN SỬA LỖI (FIX END) ---
         
         glPopMatrix();  // Restore matrix
         
@@ -171,8 +172,10 @@ void setupLighting() {
         glLightfv(GL_LIGHT1, GL_DIFFUSE, spotDiffuse);
         glLightfv(GL_LIGHT1, GL_SPECULAR, spotSpecular);
         glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, spotDirection);
-        glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 40.0f);  // Wide cone for visible light pool
-        glLightf(GL_LIGHT1, GL_SPOT_EXPONENT, 10.0f);  // Softer falloff for visible gradient
+        
+        // Điều chỉnh lại góc mở (Cutoff) rộng hơn một chút để thấy rõ hiệu ứng từ miệng đèn
+        glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 60.0f); 
+        glLightf(GL_LIGHT1, GL_SPOT_EXPONENT, 15.0f);
         glLightf(GL_LIGHT1, GL_CONSTANT_ATTENUATION, 0.5f);
         glLightf(GL_LIGHT1, GL_LINEAR_ATTENUATION, 0.02f);
         glLightf(GL_LIGHT1, GL_QUADRATIC_ATTENUATION, 0.005f);
