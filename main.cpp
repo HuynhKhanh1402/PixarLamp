@@ -74,6 +74,7 @@ void setupLighting();
 void setupMaterials();
 void drawCylinder(float radius, float height, int slices);
 void drawSphere(float radius, int slices, int stacks);
+void drawCoordinateAxes(float length);
 
 /**
  * Initialize OpenGL settings and display control instructions
@@ -373,6 +374,41 @@ void drawTable()
 }
 
 /**
+ * Draw coordinate axes for reference
+ * X-axis: Red
+ * Y-axis: Green
+ * Z-axis: Blue
+ * @param length - Length of each axis line
+ */
+void drawCoordinateAxes(float length)
+{
+    glDisable(GL_LIGHTING);
+    glLineWidth(2.0f);
+
+    glBegin(GL_LINES);
+
+    // X-axis (Red)
+    glColor3f(1.0f, 0.0f, 0.0f);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glVertex3f(length, 0.0f, 0.0f);
+
+    // Y-axis (Green)
+    glColor3f(0.0f, 1.0f, 0.0f);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glVertex3f(0.0f, length, 0.0f);
+
+    // Z-axis (Blue)
+    glColor3f(0.0f, 0.0f, 1.0f);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glVertex3f(0.0f, 0.0f, length);
+
+    glEnd();
+
+    glLineWidth(1.0f);
+    glEnable(GL_LIGHTING);
+}
+
+/**
  * Main display callback - renders the entire scene
  * Hierarchy: Table -> Lamp (Base -> LowerArm -> UpperArm -> Lampshade)
  */
@@ -392,6 +428,7 @@ void display()
 
     setupLighting();
     drawTable();
+    drawCoordinateAxes(5.0f); // Draw coordinate axes with length 5.0
 
     glPushMatrix();
 
