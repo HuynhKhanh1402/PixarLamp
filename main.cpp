@@ -253,7 +253,7 @@ void drawCylinder(float radius, float height, int slices)
 }
 
 /**
- * Draw a cone (truncated or full) using custom implementation
+ * Draw a cone
  * Algorithm: Surface of Revolution - rotating a line segment with varying radius
  * @param baseRadius - Radius at base (z=0)
  * @param topRadius - Radius at top (z=height)
