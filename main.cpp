@@ -190,7 +190,7 @@ void setupLighting()
 }
 
 /**
- * Draw a disk (circle) using custom implementation
+ * Draw a disk (circle)
  * Algorithm: Parametric Circle Drawing
  * @param innerRadius - Inner radius (0 for filled circle)
  * @param outerRadius - Outer radius
@@ -221,7 +221,7 @@ void drawDisk(float innerRadius, float outerRadius, int slices)
 }
 
 /**
- * Draw a cylinder using custom implementation
+ * Draw a cylinder
  * Algorithm: Surface of Revolution - rotating a line segment around an axis
  * @param radius - Cylinder radius
  * @param height - Cylinder height (along Z-axis)
@@ -255,7 +255,7 @@ void drawCylinder(float radius, float height, int slices)
 /**
  * Draw a cone
  * Algorithm: Surface of Revolution - rotating a line segment with varying radius
- * @param baseRadius - Radius at base (z=0)
+ * @param baseRadius - Radius at base (truncated or full) (z=0)
  * @param topRadius - Radius at top (z=height)
  * @param height - Cone height (along Z-axis)
  * @param slices - Number of subdivisions around the circumference
@@ -289,7 +289,7 @@ void drawCone(float baseRadius, float topRadius, float height, int slices)
 }
 
 /**
- * Draw a sphere using custom implementation
+ * Draw a sphere 
  * Algorithm: UV Sphere (Latitude-Longitude parameterization)
  * Parametric equations:
  *   x = r * cos(φ) * sin(θ)
@@ -346,7 +346,7 @@ void drawSphere(float radius, int slices, int stacks)
 }
 
 /**
- * Draw a wireframe cube using custom implementation
+ * Draw a wireframe cube
  * Algorithm: Direct vertex specification for 12 edges of a cube
  * The cube is centered at origin with edges parallel to coordinate axes
  * 
@@ -395,7 +395,7 @@ void drawWireCube(float size)
 }
 
 /**
- * Draw a wireframe sphere using custom implementation
+ * Draw a wireframe sphere
  * Algorithm: UV Sphere with latitude/longitude lines
  * Draws horizontal circles (latitude lines) and vertical circles (longitude lines)
  * 
@@ -451,7 +451,7 @@ void drawWireSphere(float radius, int slices, int stacks)
 /**
  * Draw the circular base of the lamp
  * Material: Dark metallic gray with high specular for metal appearance
- * Using custom primitives: cylinder + disk
+ * Using: cylinder + disk
  */
 void drawBase()
 {
@@ -521,7 +521,7 @@ void drawJoint()
  * Draw the lampshade (cone shape)
  * Material: Dark gray with slight blue tint
  * Shape: Narrow at top (joint), wide at bottom (opening)
- * Using custom primitives: truncated cone + disks
+ * Using : truncated cone + disks
  */
 void drawLampshade()
 {
@@ -629,7 +629,7 @@ void display()
     // Level 1: Base rotation (Y-axis)
     glRotatef(lampJoints.baseRotation, 0.0f, 1.0f, 0.0f);
 
-    // Draw selection highlight for base using custom wireframe cube
+    // Draw selection highlight for base wireframe cube
     if (selectedJoint == BASE)
     {
         glDisable(GL_LIGHTING);
@@ -658,7 +658,7 @@ void display()
     drawArm(LOWER_ARM_LENGTH);
     glTranslatef(0.0f, LOWER_ARM_LENGTH, 0.0f); // Move to end of lower arm
 
-    // Level 3: Upper arm joint using custom wireframe sphere
+    // Level 3: Upper arm joint using wireframe sphere
     if (selectedJoint == UPPER_ARM)
     {
         glDisable(GL_LIGHTING);
@@ -672,7 +672,7 @@ void display()
     drawArm(UPPER_ARM_LENGTH);
     glTranslatef(0.0f, UPPER_ARM_LENGTH, 0.0f); // Move to end of upper arm
 
-    // Level 4: Lampshade joint using custom wireframe sphere
+    // Level 4: Lampshade joint using wireframe sphere
     if (selectedJoint == LAMPSHADE)
     {
         glDisable(GL_LIGHTING);
