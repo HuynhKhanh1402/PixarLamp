@@ -74,6 +74,10 @@ void setupLighting();
 void setupMaterials();
 void drawCylinder(float radius, float height, int slices);
 void drawSphere(float radius, int slices, int stacks);
+void drawDisk(float innerRadius, float outerRadius, int slices);
+void drawCone(float baseRadius, float topRadius, float height, int slices);
+void drawWireCube(float size);
+void drawWireSphere(float radius, int slices, int stacks);
 
 /**
  * Initialize OpenGL settings and display control instructions
@@ -186,36 +190,268 @@ void setupLighting()
 }
 
 /**
- * Draw a cylinder using GLU quadrics
- * @param radius - Cylinder radius
- * @param height - Cylinder height
- * @param slices - Number of subdivisions around the Z-axis
+ * Draw a disk (circle) using custom implementation
+ * Algorithm: Parametric Circle Drawing
+ * @param innerRadius - Inner radius (0 for filled circle)
+ * @param outerRadius - Outer radius
+ * @param slices - Number of subdivisions around the circle
  */
-void drawCylinder(float radius, float height, int slices)
+void drawDisk(float innerRadius, float outerRadius, int slices)
 {
-    GLUquadric *quad = gluNewQuadric();
-    gluQuadricNormals(quad, GLU_SMOOTH); // Generate smooth normals
-    gluCylinder(quad, radius, radius, height, slices, 1);
-    gluDeleteQuadric(quad);
+    glBegin(GL_TRIANGLE_STRIP);
+    
+    for (int i = 0; i <= slices; i++)
+    {
+        // Parametric circle equation: x = r*cos(θ), y = r*sin(θ)
+        float theta = 2.0f * M_PI * i / slices;
+        float cosTheta = cos(theta);
+        float sinTheta = sin(theta);
+        
+        // Normal points in +Z direction (perpendicular to disk)
+        glNormal3f(0.0f, 0.0f, 1.0f);
+        
+        // Inner vertex
+        glVertex3f(innerRadius * cosTheta, innerRadius * sinTheta, 0.0f);
+        
+        // Outer vertex
+        glVertex3f(outerRadius * cosTheta, outerRadius * sinTheta, 0.0f);
+    }
+    
+    glEnd();
 }
 
 /**
- * Draw a sphere using GLU quadrics
+ * Draw a cylinder using custom implementation
+ * Algorithm: Surface of Revolution - rotating a line segment around an axis
+ * @param radius - Cylinder radius
+ * @param height - Cylinder height (along Z-axis)
+ * @param slices - Number of subdivisions around the circumference
+ */
+void drawCylinder(float radius, float height, int slices)
+{
+    // Draw the side surface using quad strips
+    glBegin(GL_QUAD_STRIP);
+    
+    for (int i = 0; i <= slices; i++)
+    {
+        // Parametric circle equation for revolution
+        float theta = 2.0f * M_PI * i / slices;
+        float cosTheta = cos(theta);
+        float sinTheta = sin(theta);
+        
+        // Normal vector points radially outward (perpendicular to cylinder axis)
+        glNormal3f(cosTheta, sinTheta, 0.0f);
+        
+        // Bottom vertex at z=0
+        glVertex3f(radius * cosTheta, radius * sinTheta, 0.0f);
+        
+        // Top vertex at z=height
+        glVertex3f(radius * cosTheta, radius * sinTheta, height);
+    }
+    
+    glEnd();
+}
+
+/**
+ * Draw a cone (truncated or full) using custom implementation
+ * Algorithm: Surface of Revolution - rotating a line segment with varying radius
+ * @param baseRadius - Radius at base (z=0)
+ * @param topRadius - Radius at top (z=height)
+ * @param height - Cone height (along Z-axis)
+ * @param slices - Number of subdivisions around the circumference
+ */
+void drawCone(float baseRadius, float topRadius, float height, int slices)
+{
+    // Calculate the slope for normal computation
+    float radiusDiff = baseRadius - topRadius;
+    float normalZ = radiusDiff / sqrt(radiusDiff * radiusDiff + height * height);
+    float normalXY = height / sqrt(radiusDiff * radiusDiff + height * height);
+    
+    glBegin(GL_QUAD_STRIP);
+    
+    for (int i = 0; i <= slices; i++)
+    {
+        float theta = 2.0f * M_PI * i / slices;
+        float cosTheta = cos(theta);
+        float sinTheta = sin(theta);
+        
+        // Normal vector for a cone surface
+        glNormal3f(normalXY * cosTheta, normalXY * sinTheta, normalZ);
+        
+        // Bottom vertex
+        glVertex3f(baseRadius * cosTheta, baseRadius * sinTheta, 0.0f);
+        
+        // Top vertex
+        glVertex3f(topRadius * cosTheta, topRadius * sinTheta, height);
+    }
+    
+    glEnd();
+}
+
+/**
+ * Draw a sphere using custom implementation
+ * Algorithm: UV Sphere (Latitude-Longitude parameterization)
+ * Parametric equations:
+ *   x = r * cos(φ) * sin(θ)
+ *   y = r * sin(φ) * sin(θ)
+ *   z = r * cos(θ)
+ * where θ ∈ [0, π] (latitude), φ ∈ [0, 2π] (longitude)
+ * 
  * @param radius - Sphere radius
- * @param slices - Number of subdivisions around the Z-axis
- * @param stacks - Number of subdivisions along the Z-axis
+ * @param slices - Number of subdivisions around the Z-axis (longitude)
+ * @param stacks - Number of subdivisions along the Z-axis (latitude)
  */
 void drawSphere(float radius, int slices, int stacks)
 {
-    GLUquadric *quad = gluNewQuadric();
-    gluQuadricNormals(quad, GLU_SMOOTH); // Generate smooth normals
-    gluSphere(quad, radius, slices, stacks);
-    gluDeleteQuadric(quad);
+    for (int i = 0; i < stacks; i++)
+    {
+        // Latitude angles (from north pole to south pole)
+        float theta1 = M_PI * i / stacks;
+        float theta2 = M_PI * (i + 1) / stacks;
+        
+        float sinTheta1 = sin(theta1);
+        float cosTheta1 = cos(theta1);
+        float sinTheta2 = sin(theta2);
+        float cosTheta2 = cos(theta2);
+        
+        glBegin(GL_QUAD_STRIP);
+        
+        for (int j = 0; j <= slices; j++)
+        {
+            // Longitude angle (around the Z-axis)
+            float phi = 2.0f * M_PI * j / slices;
+            float cosPhi = cos(phi);
+            float sinPhi = sin(phi);
+            
+            // First vertex (at theta1)
+            float x1 = radius * cosPhi * sinTheta1;
+            float y1 = radius * sinPhi * sinTheta1;
+            float z1 = radius * cosTheta1;
+            
+            // Normal is the normalized position vector for a sphere
+            glNormal3f(cosPhi * sinTheta1, sinPhi * sinTheta1, cosTheta1);
+            glVertex3f(x1, y1, z1);
+            
+            // Second vertex (at theta2)
+            float x2 = radius * cosPhi * sinTheta2;
+            float y2 = radius * sinPhi * sinTheta2;
+            float z2 = radius * cosTheta2;
+            
+            glNormal3f(cosPhi * sinTheta2, sinPhi * sinTheta2, cosTheta2);
+            glVertex3f(x2, y2, z2);
+        }
+        
+        glEnd();
+    }
+}
+
+/**
+ * Draw a wireframe cube using custom implementation
+ * Algorithm: Direct vertex specification for 12 edges of a cube
+ * The cube is centered at origin with edges parallel to coordinate axes
+ * 
+ * @param size - Edge length of the cube
+ */
+void drawWireCube(float size)
+{
+    float half = size / 2.0f;
+    
+    // Define 8 vertices of the cube
+    // Front face: z = +half
+    // Back face:  z = -half
+    float vertices[8][3] = {
+        {-half, -half,  half},  // 0: Front bottom left
+        { half, -half,  half},  // 1: Front bottom right
+        { half,  half,  half},  // 2: Front top right
+        {-half,  half,  half},  // 3: Front top left
+        {-half, -half, -half},  // 4: Back bottom left
+        { half, -half, -half},  // 5: Back bottom right
+        { half,  half, -half},  // 6: Back top right
+        {-half,  half, -half}   // 7: Back top left
+    };
+    
+    // Draw 12 edges using GL_LINES
+    glBegin(GL_LINES);
+    
+    // Front face edges (4 edges)
+    glVertex3fv(vertices[0]); glVertex3fv(vertices[1]); // Bottom edge
+    glVertex3fv(vertices[1]); glVertex3fv(vertices[2]); // Right edge
+    glVertex3fv(vertices[2]); glVertex3fv(vertices[3]); // Top edge
+    glVertex3fv(vertices[3]); glVertex3fv(vertices[0]); // Left edge
+    
+    // Back face edges (4 edges)
+    glVertex3fv(vertices[4]); glVertex3fv(vertices[5]); // Bottom edge
+    glVertex3fv(vertices[5]); glVertex3fv(vertices[6]); // Right edge
+    glVertex3fv(vertices[6]); glVertex3fv(vertices[7]); // Top edge
+    glVertex3fv(vertices[7]); glVertex3fv(vertices[4]); // Left edge
+    
+    // Connecting edges between front and back faces (4 edges)
+    glVertex3fv(vertices[0]); glVertex3fv(vertices[4]); // Bottom left
+    glVertex3fv(vertices[1]); glVertex3fv(vertices[5]); // Bottom right
+    glVertex3fv(vertices[2]); glVertex3fv(vertices[6]); // Top right
+    glVertex3fv(vertices[3]); glVertex3fv(vertices[7]); // Top left
+    
+    glEnd();
+}
+
+/**
+ * Draw a wireframe sphere using custom implementation
+ * Algorithm: UV Sphere with latitude/longitude lines
+ * Draws horizontal circles (latitude lines) and vertical circles (longitude lines)
+ * 
+ * @param radius - Sphere radius
+ * @param slices - Number of vertical segments (longitude lines)
+ * @param stacks - Number of horizontal segments (latitude lines)
+ */
+void drawWireSphere(float radius, int slices, int stacks)
+{
+    // Draw latitude lines (horizontal circles)
+    for (int i = 0; i <= stacks; i++)
+    {
+        float theta = M_PI * i / stacks; // Latitude angle from 0 (north pole) to π (south pole)
+        float sinTheta = sin(theta);
+        float cosTheta = cos(theta);
+        float currentRadius = radius * sinTheta; // Radius of current latitude circle
+        float z = radius * cosTheta;             // Z-coordinate at this latitude
+        
+        glBegin(GL_LINE_LOOP);
+        for (int j = 0; j < slices; j++)
+        {
+            float phi = 2.0f * M_PI * j / slices; // Longitude angle
+            float x = currentRadius * cos(phi);
+            float y = currentRadius * sin(phi);
+            glVertex3f(x, y, z);
+        }
+        glEnd();
+    }
+    
+    // Draw longitude lines (vertical circles from pole to pole)
+    for (int j = 0; j < slices; j++)
+    {
+        float phi = 2.0f * M_PI * j / slices; // Longitude angle
+        float cosPhi = cos(phi);
+        float sinPhi = sin(phi);
+        
+        glBegin(GL_LINE_STRIP);
+        for (int i = 0; i <= stacks; i++)
+        {
+            float theta = M_PI * i / stacks; // Latitude angle
+            float sinTheta = sin(theta);
+            float cosTheta = cos(theta);
+            
+            float x = radius * cosPhi * sinTheta;
+            float y = radius * sinPhi * sinTheta;
+            float z = radius * cosTheta;
+            glVertex3f(x, y, z);
+        }
+        glEnd();
+    }
 }
 
 /**
  * Draw the circular base of the lamp
  * Material: Dark metallic gray with high specular for metal appearance
+ * Using custom primitives: cylinder + disk
  */
 void drawBase()
 {
@@ -234,11 +470,8 @@ void drawBase()
     drawCylinder(BASE_RADIUS, BASE_HEIGHT, 32);
 
     // Draw top cap to close the cylinder
-    GLUquadric *quad = gluNewQuadric();
-    gluQuadricNormals(quad, GLU_SMOOTH);
     glTranslatef(0.0f, 0.0f, BASE_HEIGHT);
-    gluDisk(quad, 0.0f, BASE_RADIUS, 32, 1);
-    gluDeleteQuadric(quad);
+    drawDisk(0.0f, BASE_RADIUS, 32);
     glPopMatrix();
 }
 
@@ -288,6 +521,7 @@ void drawJoint()
  * Draw the lampshade (cone shape)
  * Material: Dark gray with slight blue tint
  * Shape: Narrow at top (joint), wide at bottom (opening)
+ * Using custom primitives: truncated cone + disks
  */
 void drawLampshade()
 {
@@ -306,13 +540,11 @@ void drawLampshade()
     // Rotate -90° so the cone points downward
     glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
 
-    GLUquadric *quad = gluNewQuadric();
-    gluQuadricNormals(quad, GLU_SMOOTH);
-
     // Draw cone: narrow at top (0.4 * radius), wide at bottom (radius)
-    gluCylinder(quad, LAMPSHADE_RADIUS * 0.4f, LAMPSHADE_RADIUS, LAMPSHADE_HEIGHT, 32, 1);
+    drawCone(LAMPSHADE_RADIUS * 0.4f, LAMPSHADE_RADIUS, LAMPSHADE_HEIGHT, 32);
 
-    gluDisk(quad, 0.0f, LAMPSHADE_RADIUS * 0.4f, 32, 1);
+    // Draw top cap (narrow end)
+    drawDisk(0.0f, LAMPSHADE_RADIUS * 0.4f, 32);
 
     // Draw inner glow at bottom opening when spotlight is on
     if (spotlightEnabled)
@@ -320,11 +552,10 @@ void drawLampshade()
         glDisable(GL_LIGHTING);                     // Draw unlit for glowing effect
         glColor4f(1.0f, 0.9f, 0.2f, 0.9f);          // Bright warm yellow
         glTranslatef(0.0f, 0.0f, LAMPSHADE_HEIGHT); // Move to bottom opening
-        gluDisk(quad, 0.0f, LAMPSHADE_RADIUS * 0.5f, 32, 1);
+        drawDisk(0.0f, LAMPSHADE_RADIUS * 0.5f, 32);
         glEnable(GL_LIGHTING);
     }
 
-    gluDeleteQuadric(quad);
     glPopMatrix();
 }
 
@@ -398,14 +629,14 @@ void display()
     // Level 1: Base rotation (Y-axis)
     glRotatef(lampJoints.baseRotation, 0.0f, 1.0f, 0.0f);
 
-    // Draw selection highlight for base
+    // Draw selection highlight for base using custom wireframe cube
     if (selectedJoint == BASE)
     {
         glDisable(GL_LIGHTING);
         glColor3f(1.0f, 1.0f, 0.0f); // Yellow wireframe
         glPushMatrix();
         glTranslatef(0.0f, BASE_HEIGHT * 0.5f, 0.0f);
-        glutWireCube(BASE_RADIUS * 2.2f);
+        drawWireCube(BASE_RADIUS * 2.2f);
         glPopMatrix();
         glEnable(GL_LIGHTING);
     }
@@ -418,7 +649,7 @@ void display()
     {
         glDisable(GL_LIGHTING);
         glColor3f(1.0f, 1.0f, 0.0f); // Yellow wireframe
-        glutWireSphere(ARM_RADIUS * 2.5f, 16, 16);
+        drawWireSphere(ARM_RADIUS * 2.5f, 16, 16);
         glEnable(GL_LIGHTING);
     }
 
@@ -427,12 +658,12 @@ void display()
     drawArm(LOWER_ARM_LENGTH);
     glTranslatef(0.0f, LOWER_ARM_LENGTH, 0.0f); // Move to end of lower arm
 
-    // Level 3: Upper arm joint
+    // Level 3: Upper arm joint using custom wireframe sphere
     if (selectedJoint == UPPER_ARM)
     {
         glDisable(GL_LIGHTING);
         glColor3f(1.0f, 1.0f, 0.0f); // Yellow wireframe
-        glutWireSphere(ARM_RADIUS * 2.5f, 16, 16);
+        drawWireSphere(ARM_RADIUS * 2.5f, 16, 16);
         glEnable(GL_LIGHTING);
     }
 
@@ -441,12 +672,12 @@ void display()
     drawArm(UPPER_ARM_LENGTH);
     glTranslatef(0.0f, UPPER_ARM_LENGTH, 0.0f); // Move to end of upper arm
 
-    // Level 4: Lampshade joint
+    // Level 4: Lampshade joint using custom wireframe sphere
     if (selectedJoint == LAMPSHADE)
     {
         glDisable(GL_LIGHTING);
         glColor3f(1.0f, 1.0f, 0.0f); // Yellow wireframe
-        glutWireSphere(ARM_RADIUS * 2.5f, 16, 16);
+        drawWireSphere(ARM_RADIUS * 2.5f, 16, 16);
         glEnable(GL_LIGHTING);
     }
 
