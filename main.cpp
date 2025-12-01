@@ -42,7 +42,7 @@ struct LampJoints
 };
 
 // Initial lamp configuration
-LampJoints lampJoints = {0.0f, 45.0f, -60.0f, -30.0f, 0.0f};
+LampJoints lampJoints = {0.0f, 30.0f, -60.0f, -90.0f, 0.0f};
 JointSelection selectedJoint = BASE;
 bool spotlightEnabled = true;
 
@@ -550,9 +550,9 @@ void keyboard(unsigned char key, int x, int y)
     case 'R':
         // Reset all joints to default configuration
         lampJoints.baseRotation = 0.0f;
-        lampJoints.lowerArmAngle = 45.0f;
+        lampJoints.lowerArmAngle = 30.0f;
         lampJoints.upperArmAngle = -60.0f;
-        lampJoints.lampshadeAngle = -30.0f;
+        lampJoints.lampshadeAngle = -90.0f;
         lampJoints.lampshadeRotation = 0.0f;
         std::cout << "Reset to default position" << std::endl;
         break;
